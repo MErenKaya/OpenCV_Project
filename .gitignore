@@ -1,0 +1,26 @@
+# Visual Studio Geçici ve Gereksiz Dosyalar
+.vs/
+[Bb]in/
+[Oo]bj/
+*.ipch
+*.pch
+*.sln.dotsettings.user
+*.user
+*.suo
+*.db
+*.opendb
+
+# Derleme (Build) Sonuçları
+*.exe
+*.dll
+*.lib
+*.out
+*.app
+build/
+x64/
+Debug/
+Release/
+
+# OpenCV ve Diğer Geçici Dosyalar
+*.log
+*.tmp
