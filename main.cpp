@@ -30,9 +30,9 @@ int main()
         return -1;
     }
 
-    const float confThreshold = 0.45f; // güven eşiği (zayıf tahminleri sil)
-    const float nmsThreshold = 0.40f;  // çakışan kutuları temizleme oranı
-    const int inputSize = 640;         // YOLO giriş görüntü boyutu
+    const float confThreshold = 0.45f;
+    const float nmsThreshold = 0.40f;
+    const int inputSize = 640;
 
     Mat frame;
 
@@ -43,78 +43,78 @@ int main()
 
         Mat blob;
 
-        blobFromImage(frame, blob, 1.0 / 255.0, Size(inputSize, inputSize), Scalar(), true, false); // görüntüyü YOLO formatına çevir
+        blobFromImage(frame, blob, 1.0 / 255.0, Size(inputSize, inputSize), Scalar(), true, false);
 
-        net.setInput(blob);          // modele görüntüyü ver
+        net.setInput(blob);
 
-        vector<Mat> outputs;         // model çıktıları 100*100 lük bir fotoyu 2*2 yapmak gibi
-        net.forward(outputs, net.getUnconnectedOutLayersNames()); // forward pass hadi hesapla
+        vector<Mat> outputs;
+        net.forward(outputs, net.getUnconnectedOutLayersNames());
 
-        Mat output = outputs[0];     // YOLO çıktısı (raw tensor)
+        Mat output = outputs[0];
 
-        // YOLOv8 çıktısını tabloya çevir
+
         Mat rows84 = Mat(output.size[1], output.size[2], CV_32F, output.ptr<float>());
-        Mat outMat = rows84.t();     // transpose (8400 x 84 hale getir)
+        Mat outMat = rows84.t();
 
-        vector<int> classIds;        // tespit edilen sınıf ID'leri
-        vector<float> confidences;   // güven skorları
-        vector<Rect> boxes;          // bounding box'lar
+        vector<int> classIds;
+        vector<float> confidences;
+        vector<Rect> boxes;
 
-        float x_factor = (float)frame.cols / inputSize; // genişlik ölçek
-        float y_factor = (float)frame.rows / inputSize; // yükseklik ölçek
+        float x_factor = (float)frame.cols / inputSize;
+        float y_factor = (float)frame.rows / inputSize;
 
-        for (int i = 0; i < outMat.rows; i++) // işe yararmı yaramaz mı
+        for (int i = 0; i < outMat.rows; i++)
         {
-            float* data = (float*)outMat.row(i).data; //tek satır verisi
+            float* data = (float*)outMat.row(i).data;
 
-            Mat scores(1, classes.size(), CV_32F, data + 4); //classların skorları
+            Mat scores(1, classes.size(), CV_32F, data + 4);
             Point classIdPoint;
             double maxClassScore;
 
-            minMaxLoc(scores, 0, &maxClassScore, 0, &classIdPoint); // en iyi sınıf
+            minMaxLoc(scores, 0, &maxClassScore, 0, &classIdPoint);
 
-            if (maxClassScore > confThreshold) // güven yeterliyse
+            if (maxClassScore > confThreshold)
             {
-                float x = data[0]; // merkez x
-                float y = data[1]; // merkez y
-                float w = data[2]; // genişlik
-                float h = data[3]; // yükseklik
+                float x = data[0];
+                float y = data[1];
+                float w = data[2];
+                float h = data[3];
 
-                int left = (int)((x - 0.5 * w) * x_factor); // sol üst x
-                int top = (int)((y - 0.5 * h) * y_factor);  // sol üst y
-                int width = (int)(w * x_factor);            // gerçek genişlik
-                int height = (int)(h * y_factor);           // gerçek yükseklik
+                int left = (int)((x - 0.5 * w) * x_factor);
+                int top = (int)((y - 0.5 * h) * y_factor);
+                int width = (int)(w * x_factor);
+                int height = (int)(h * y_factor);
 
-                classIds.push_back(classIdPoint.x);        // sınıf ID kaydet
-                confidences.push_back((float)maxClassScore); // güven kaydet
-                boxes.push_back(Rect(left, top, width, height)); // kutu ekle
+                classIds.push_back(classIdPoint.x);
+                confidences.push_back((float)maxClassScore);
+                boxes.push_back(Rect(left, top, width, height));
             }
         }
 
-        vector<int> indices; // NMS sonucu indexler
+        vector<int> indices;
 
         NMSBoxes(boxes, confidences, confThreshold,
-            nmsThreshold, indices); // fazla kutuları sil
+            nmsThreshold, indices);
 
-        for (int i : indices) // kalan kutular
+        for (int i : indices)
         {
-            Rect box = boxes[i]; // kutu al
+            Rect box = boxes[i];
 
-            box &= Rect(0, 0, frame.cols, frame.rows); // ekran dışına taşmayı engelle
+            box &= Rect(0, 0, frame.cols, frame.rows);
 
-            rectangle(frame, box, Scalar(0, 255, 0), 2); // yeşil kutu çiz
+            rectangle(frame, box, Scalar(0, 255, 0), 2);
 
             string label = classes[classIds[i]] + " " +
-                to_string((int)(confidences[i] * 100)) + "%"; // etiket
+                to_string((int)(confidences[i] * 100)) + "%";
 
             putText(frame, label,
                 Point(box.x, box.y),
                 FONT_HERSHEY_SIMPLEX,
                 0.5,
-                Scalar(0, 0, 0), 1); // yazıyı çiz
+                Scalar(0, 0, 0), 1);
         }
 
-        imshow("YOLOv8 + OpenCV DNN", frame); // görüntüyü göster
+        imshow("YOLOv8 + OpenCV DNN", frame);
 
         if (waitKey(1) == 27) break;
     }
