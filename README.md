@@ -53,4 +53,4 @@ Make sure OpenCV is installed in Visual Studio.
 
 ### 2. Add required files
 
-Place these in your project folder:
+Place these in your project folder.
